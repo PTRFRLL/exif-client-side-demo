@@ -1,6 +1,5 @@
 const input = document.getElementById('image');
 const output = document.getElementById('output');
-const details = document.getElementById('details');
 
 input.addEventListener('change', function(){
     console.log('FILES', this.files);
@@ -12,11 +11,29 @@ input.addEventListener('change', function(){
  * @param {array} images 
  */
 function processImages(images){
-    Promise.all(images.map(file => {
-        return getExifData(file);
+    Promise.all(images.map(async file => {
+        let exif = await getExifData(file);
+        let data = await generateBase64Img(file);
+        return {
+            exif, data
+        }
     })).then(data => {
         data.forEach(file => displayData(file))
     });
+}
+
+/**
+ * Generate base64 string of image
+ * @param {*} file 
+ */
+function generateBase64Img(file){
+    return new Promise((resolve, reject) => {
+        let reader = new FileReader();
+        reader.onloadend = function(e){
+            resolve(this.result);
+        };
+        reader.readAsDataURL(file);
+    })
 }
 
 /**
@@ -27,11 +44,11 @@ function generateDetails(filedata){
     let message = `<strong>${filedata.name}</strong>`;
     let {DateTime} = filedata;
     if(DateTime){
-        message += `: taken on ${parseDate(DateTime).toDateString()}`;
+        message += `<br />${parseDate(DateTime).toDateString()}`;
     }
     let {lat, long} = getGPSData(filedata);
     if(lat && long){
-        message += ` at <a href="http://www.google.com/maps/place/${lat},${long}" target="_blank">${lat}, ${long}</a>`;
+        message += `<br /><a href="http://www.google.com/maps/place/${lat},${long}" target="_blank">${lat}, ${long}</a>`;
     }
     return message;
 }
@@ -41,13 +58,22 @@ function generateDetails(filedata){
  * @param {any} fileinfo 
  */
 function displayData(fileinfo){
+    const outer = document.createElement('div');
+    outer.classList.add('outer');
+    const div = document.createElement('div');
+    div.classList.add('container');
     const pre = document.createElement('pre');
     const detail = document.createElement('p');
-    detail.innerHTML = generateDetails(fileinfo);
-    pre.style.backgroundColor = "#ddd";
-    pre.innerHTML = JSON.stringify(fileinfo, null, 4);
-    output.appendChild(detail);
-    output.appendChild(pre);
+    const image = document.createElement('img');
+    image.src = fileinfo.data;
+    detail.innerHTML = generateDetails(fileinfo.exif);
+    pre.classList.add('exif');
+    pre.innerHTML = JSON.stringify(fileinfo.exif, null, 4);
+    outer.appendChild(detail);
+    div.appendChild(image);
+    div.appendChild(pre);
+    outer.appendChild(div);
+    output.appendChild(outer);
 }
 
 /**
