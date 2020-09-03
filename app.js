@@ -7,6 +7,10 @@ input.addEventListener('change', function(){
     processImages(Array.from(this.files));
 });
 
+/**
+ * Get exif data for all supplied image files
+ * @param {array} images 
+ */
 function processImages(images){
     Promise.all(images.map(file => {
         return getExifData(file);
@@ -15,6 +19,10 @@ function processImages(images){
     });
 }
 
+/**
+ * Generate formatted details (date, GPS) for image
+ * @param {any} filedata 
+ */
 function generateDetails(filedata){
     let message = `<strong>${filedata.name}</strong>`;
     let {DateTime} = filedata;
@@ -28,6 +36,10 @@ function generateDetails(filedata){
     return message;
 }
 
+/**
+ * Add exif data to html
+ * @param {any} fileinfo 
+ */
 function displayData(fileinfo){
     const pre = document.createElement('pre');
     const detail = document.createElement('p');
@@ -38,6 +50,10 @@ function displayData(fileinfo){
     output.appendChild(pre);
 }
 
+/**
+ * Get image EXIF data using exif-js
+ * @param {*} file 
+ */
 function getExifData(file){
     return new Promise((resolve, reject) => {
         EXIF.getData(file, function(){
@@ -50,11 +66,19 @@ function getExifData(file){
     })
 }
 
-function parseDate(s) {
-    var b = s.split(/\D/);
+/**
+ * Convert EXIF datestring into js date
+ * @param {string} dateString 
+ */
+function parseDate(date) {
+    var b = date.split(/\D/);
     return new Date(b[0],b[1]-1,b[2],b[3],b[4],b[5]);
 }
 
+/**
+ * Convert EXIF GPS data into lat,long
+ * @param {any} allExif 
+ */
 function getGPSData(allExif){
     let {GPSLatitude, GPSLatitudeRef, GPSLongitudeRef, GPSLongitude} = allExif;
     let lat, long;
@@ -78,6 +102,13 @@ function getGPSData(allExif){
     return {lat, long};
 }
 
+/**
+ * Conver GPS in d/m/s into decimal coordinates
+ * @param {number} degrees 
+ * @param {number} minutes 
+ * @param {number} seconds 
+ * @param {string} direction 
+ */
 function ConvertDMStoDD(degrees, minutes, seconds, direction) {
     let dd = degrees + (minutes/60) + (seconds/3600);
     if(direction == "S" || direction == "W"){
